@@ -35,7 +35,7 @@ Rejeitada. [09:23] Sofia defendeu erro: "Se chegou nesse tamanho, tem algo errad
 
 ### Incluir `items` no payload
 
-Rejeitada para evitar inflar o evento: "Não manda items pra não inflar" ([09:43] Diego), "mantém payload enxuto" ([09:44] Bruno).
+Registrada no [RFC](../RFC.md) como RFC-ALT-13. Rejeitada para evitar inflar o evento: "Não manda items pra não inflar" ([09:43] Diego), "mantém payload enxuto" ([09:44] Bruno).
 
 ### Id auto incremental na outbox
 

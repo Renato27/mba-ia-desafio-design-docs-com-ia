@@ -43,13 +43,13 @@ Arquivamento das linhas entregues (cerca de 30 dias) fica **fora do escopo** des
 
 ### Negativas
 
-- A tabela cresce e disputa o mesmo MySQL da API. Mitigação parcial por índices e batch pequeno ([09:07] Bruno perguntou sobre performance, [09:08] Diego respondeu). A retenção/arquivamento não está definida (fora do escopo, [09:08] Diego).
+- A tabela cresce e disputa o mesmo MySQL da API (análise deste ADR, **Hipótese**; a reunião só trata do crescimento e dos índices). Mitigação parcial por índices e batch pequeno ([09:07] Bruno perguntou sobre performance, [09:08] Diego respondeu). A retenção/arquivamento não está definida (fora do escopo, [09:08] Diego).
 - A transação de `changeStatus` ganha mais uma escrita, e uma falha na inserção da outbox faz rollback da mudança de status ([09:40] Bruno).
 - O evento só sai depois que o worker o lê, o que depende do ADR-002.
 
 ### Trade-off
 
-Trocamos a simplicidade de um HTTP direto (sem tabela nem worker) por **consistência garantida entre o status do pedido e o evento**, ao custo de manter uma tabela extra, um processo worker e mais carga no MySQL. Foi aceito também preferir o MySQL existente a uma fila dedicada, abrindo mão das capacidades de um broker em nome de menos infraestrutura ([09:07] Diego).
+Trocamos a simplicidade de um HTTP direto (sem tabela nem worker) por **consistência garantida entre o status do pedido e o evento**, ao custo de manter uma tabela extra, um processo worker e mais carga no MySQL. Foi aceito também preferir o MySQL existente a uma fila dedicada, em nome de menos infraestrutura ([09:07] Diego). Que isso signifique abrir mão das capacidades de um broker é análise deste ADR (**Hipótese**).
 
 ## Referências
 

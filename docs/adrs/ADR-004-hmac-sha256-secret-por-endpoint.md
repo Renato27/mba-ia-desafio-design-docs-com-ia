@@ -8,7 +8,7 @@
 
 ## Status
 
-Aceito. Sofia fechou em [09:22] ("Decidido: HMAC-SHA256 sobre o corpo do request, secret por endpoint, suporte a rotação com grace period de 24h"), confirmado no resumo de [09:48] e aceito por Diego, Bruno e Larissa. Sofia pediu revisão de segurança do código de HMAC e geração de secret antes do deploy ([09:46] Sofia).
+Aceito. O fechamento específico é de [09:22] Sofia ("Decidido: HMAC-SHA256 sobre o corpo do request, secret por endpoint, suporte a rotação com grace period de 24h"). O resumo geral de [09:48] Larissa o reapresentou, e o aceite de [09:49] (Diego, Bruno e Sofia) é do resumo como um todo, não desta decisão isoladamente. Sofia pediu revisão de segurança do código de HMAC e geração de secret antes do deploy ([09:46] Sofia).
 
 ## Contexto
 
@@ -27,14 +27,14 @@ O código atual não tem nenhum mecanismo de assinatura. Em `src/shared/logger/i
 Lacunas **não decididas na reunião** (rotuladas como Hipótese ou em aberto, a fechar na revisão de segurança de Sofia e no FDD):
 
 - **Formato do valor de `X-Signature`** (por exemplo, prefixo `sha256=` e codificação hex): **em aberto**.
-- **Se o `X-Timestamp` entra no material assinado:** **em aberto**. A reunião só diz "HMAC sobre o corpo do request" ([09:22] Sofia).
+- **Se o `X-Timestamp` entra no material assinado:** **em aberto**. A reunião só diz "HMAC-SHA256 sobre o corpo do request" ([09:22] Sofia).
 - **Armazenamento da secret** (cifrada ou em hash): **em aberto**. **Hipótese:** como a plataforma precisa da secret em claro para assinar cada envio, hash unidirecional não serviria; isso deve ser avaliado por Sofia.
-- **Rota exata da rotação:** a reunião só fala em "endpoint pro cliente conseguir pedir nova secret pela API" ([09:21] Sofia). **Hipótese** de contrato no FDD (`POST /webhooks/:id/rotate-secret`).
+- **Rota exata da rotação:** a reunião só fala em "Endpoint pro cliente conseguir pedir nova secret pela API" ([09:21] Sofia). **Hipótese** de contrato no FDD (`POST /webhooks/:id/rotate-secret`).
 - **Hipótese:** adicionar redact de secret e assinatura no Pino (`src/shared/logger/index.ts`), em linha com o vazamento relatado em [09:22] Diego; proposta do FDD, sem decisão na reunião.
 
 ## Alternativas Consideradas
 
-1. **Secret global única da plataforma.** Rejeitada. Se vaza uma, vaza tudo. Fonte: [09:21] Sofia, reforçada por [09:22] Diego (cliente já vazou secret em log).
+1. **Secret global única da plataforma.** Excluída como requisito por Sofia ([09:21]: "Senão se vaza uma, vaza tudo"); ninguém a propôs. Fonte: [09:21] Sofia. [09:22] Diego ("A gente já teve cliente que vazou secret em log de aplicação dele uma vez") reforça a necessidade de rotação e grace period, não a rejeição da secret global.
 2. **Rotação sem período de convivência (a secret antiga morre na hora).** Rejeitada de forma implícita: o grace de 24h existe para o cliente ter tempo de migrar os sistemas dele. Fonte: [09:21] Sofia. A reunião não discutiu uma proposta alternativa explícita; este item registra o contraste com a decisão.
 
 ## Consequências

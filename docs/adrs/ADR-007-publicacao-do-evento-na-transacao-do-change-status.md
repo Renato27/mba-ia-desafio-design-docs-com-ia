@@ -8,7 +8,7 @@
 
 ## Status
 
-Aceito. Proposto por [09:40] Bruno, com concordância de [09:41] Diego ("Essencial. Se ficar fora da transação, perde a garantia toda.") e [09:41] Diego sobre a função recebendo o `tx`. O filtro na inserção foi proposto em [09:34] Bruno, com [09:34] Diego concordando. O resumo de [09:48] Larissa registra "transação atômica com mudança de status".
+Aceito. Proposto por [09:40] Bruno, com concordância de [09:41] Diego ("Essencial. Se ficar fora da transação, perde a garantia toda.") e [09:41] Diego sobre a função recebendo o `tx`. A origem do filtro na inserção é [09:33] Marcos ("a gente filtra na hora de inserir na outbox"); [09:34] Bruno e [09:34] Diego confirmam e justificam. O resumo de [09:48] Larissa registra "transação atômica com mudança de status".
 
 ## Contexto
 
@@ -57,13 +57,13 @@ Considerada em [09:34] Diego ("Filtra na inserção do outbox ou na hora de mand
 
 ### Negativas
 
-- Alteração crítica em código existente e testado (`src/modules/orders/order.service.ts`): exige testes ponta a ponta ([09:46] Larissa).
-- A transação de `changeStatus` fica mais longa: o `tx` passa a incluir leitura de configuração e escrita da outbox.
+- Alteração crítica em código existente e testado (`src/modules/orders/order.service.ts`, [09:40] Bruno). A estimativa de Larissa já inclui testes ponta a ponta na integração com `order.service` ([09:46] Larissa); tratá-los como mitigação é **Hipótese** deste ADR.
+- A transação de `changeStatus` fica mais longa: o `tx` passa a incluir leitura de configuração e escrita da outbox (**Hipótese**, item 4 da Decisão).
 - Qualquer falha na inserção (inclusive erro por payload acima do limite, ver [ADR-008](ADR-008-payload-snapshot-na-insercao-da-outbox.md)) causa rollback da mudança de status ([09:40] Bruno). **Hipótese**: se um erro de tamanho de payload deve de fato abortar a mudança de status não foi decidido; fica para o FDD e o RFC.
 
 ### Trade-off
 
-Troca-se um acoplamento leve e pontual entre `changeStatus` e a função de publicação, mais carga na transação crítica, por garantia forte de consistência entre mudança de status e evento ([09:41] Diego). Aceita-se que a falha de webhook possa derrubar a mudança de status em vez de aceitar eventos perdidos.
+Troca-se um acoplamento leve e pontual entre `changeStatus` e a função de publicação, mais carga na transação crítica, por garantia forte de consistência entre mudança de status e evento ([09:41] Diego). Aceita-se que a falha na inserção na outbox possa derrubar a mudança de status ([09:40] Bruno); falha ou lentidão do cliente não derruba ([09:04] Bruno). A alternativa seria aceitar eventos perdidos.
 
 ## Referências
 

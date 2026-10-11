@@ -30,7 +30,7 @@ Reusar, sem criar nada paralelo ([09:30] Larissa):
 2. **Erros** seguem `AppError` e suas subclasses, com prefixo `WEBHOOK_` em todos os códigos do módulo ([09:28] Bruno, [09:29] Larissa). Exemplos citados: `WEBHOOK_NOT_FOUND`, `WEBHOOK_INVALID_URL`, `WEBHOOK_SECRET_REQUIRED`, "etc" ([09:28] Bruno). Seguem o estilo de `InvalidStatusTransitionError extends ConflictError` em `src/shared/errors/http-errors.ts`. **Hipótese**: lista completa de códigos e classe base de cada um, a fechar no FDD.
 3. **Logger**: Pino existente, "não vamos botar nada novo" ([09:29] Bruno). **Hipótese** do FDD: incluir `secret` e assinatura nos `redact` de `src/shared/logger/index.ts`, motivada por [09:22] Diego (cliente já vazou secret em log), mas não decidida na reunião.
 4. **Middleware de erro**: `errorMiddleware` "vai pegar nossos erros sem precisar mudar nada" ([09:29] Bruno). Nenhuma alteração em `src/middlewares/error.middleware.ts`.
-5. **Schemas Zod e validação** com `validate(...)` ([09:30] Larissa). A regra de HTTPS obrigatório para a URL é só uma validação no schema Zod, "nem é decisão arquitetural" ([09:23] Sofia).
+5. **Schemas Zod e validação**: [09:30] Larissa cita apenas "padrão de schemas Zod"; o `validate(...)` a reusar vem do código (`src/middlewares/validate.middleware.ts`), não de fala. A regra de HTTPS obrigatório para a URL é só uma validação no schema Zod, "nem é decisão arquitetural" ([09:23] Sofia).
 6. **Autorização**: o replay admin exige role `ADMIN` reaproveitando `requireRole` ([09:36] Sofia, [09:36] Larissa); o resto do CRUD usa só `authenticate` ([09:36] Marcos, [09:37] Sofia).
 7. **Banco e Prisma**: mesmo banco e mesma `DATABASE_URL`; o worker usa um `PrismaClient` próprio porque "PrismaClient é por processo" ([09:30] Bruno), o que é viável com `createPrismaClient()` em `src/config/database.ts`. O worker segue o modelo do `src/server.ts` ([09:11] Larissa, ver [ADR-002](ADR-002-worker-separado-em-polling.md)).
 
@@ -52,9 +52,9 @@ Parcialmente discutida: [09:28] Bruno propôs `src/worker.ts` (a criar) como ent
 
 ### Positivas
 
-- Curva de aprendizado e revisão menores: o módulo é igual aos outros ([09:27] Bruno).
+- Curva de aprendizado e revisão menores (inferência deste ADR, **Hipótese**): o que [09:27] Bruno diz é que o webhook seguirá o padrão de módulos existente.
 - O contrato de erro `{ error: { code, message, details? } }` fica uniforme para os clientes, sem mudar `src/middlewares/error.middleware.ts` ([09:29] Bruno).
-- Reaproveita `requireRole`, `validate`, Pino e `AppError`, reduzindo código novo e risco.
+- Reaproveita `requireRole`, `validate` (`src/middlewares/validate.middleware.ts`), Pino e `AppError`, reduzindo código novo; que isso reduza risco é inferência deste ADR (**Hipótese**).
 
 ### Negativas
 
@@ -64,7 +64,7 @@ Parcialmente discutida: [09:28] Bruno propôs `src/worker.ts` (a criar) como ent
 
 ### Trade-off
 
-Escolhe-se consistência e velocidade de entrega (prazo de 3 sprints, [09:47] Larissa) em vez de liberdade para desenhar convenções ideais para webhooks. O custo é herdar as limitações do padrão atual, aceitas por [09:30] Larissa.
+Escolhe-se consistência com o padrão existente ([09:30] Larissa, [09:29] Bruno). As limitações listadas em Consequências Negativas são análise deste ADR (**Hipótese**).
 
 ## Referências
 

@@ -8,11 +8,11 @@
 
 ## Status
 
-Aceito. A decisão foi fechada na reunião por [09:26] Larissa ("At-least-once com X-Event-Id pra dedup do lado do cliente. Decisão.") e reconfirmada no resumo de [09:48] Larissa ("Idempotência por X-Event-Id, garantia at-least-once"), com aceite de [09:49] Diego, [09:49] Bruno, [09:49] Sofia e [09:49] Marcos.
+Aceito. O fechamento específico é de [09:26] Larissa ("At-least-once com X-Event-Id pra dedup do lado do cliente. Decisão."). O resumo geral de [09:48] Larissa o reapresentou ("Idempotência por X-Event-Id, garantia at-least-once"), e o aceite de [09:49] Diego, [09:49] Bruno, [09:49] Sofia e [09:49] Marcos é do resumo como um todo.
 
 ## Contexto
 
-O worker separado ([ADR-002](ADR-002-worker-separado-em-polling.md)) lê a outbox ([ADR-001](ADR-001-outbox-no-mysql.md)) e faz a chamada HTTP ao cliente, com retry e DLQ ([ADR-003](ADR-003-retry-backoff-exponencial-e-dlq.md)). Quando o worker envia, mas não consegue confirmar a resposta (por exemplo, timeout de 10 s, [09:42] Diego), o mesmo evento será reenviado. Portanto o mesmo evento pode chegar duas vezes ao cliente ([09:24] Diego: "Pode acontecer de o cliente receber o mesmo evento duas vezes. Ele tem que estar preparado."). Foi preciso definir a garantia de entrega e como o cliente distingue duplicatas ([09:25] Bruno: "E como ele diferencia?").
+O worker separado ([ADR-002](ADR-002-worker-separado-em-polling.md)) lê a outbox ([ADR-001](ADR-001-outbox-no-mysql.md)) e faz a chamada HTTP ao cliente, com retry e DLQ ([ADR-003](ADR-003-retry-backoff-exponencial-e-dlq.md)). O timeout de 10 s ([09:42] Diego) é tratado como falha e marcado para retry. Que um timeout leve a reenvio de um evento que o cliente talvez já tenha processado é inferência deste documento (**Hipótese**). A reunião afirma que o mesmo evento pode chegar duas vezes ao cliente ([09:24] Diego: "Pode acontecer de o cliente receber o mesmo evento duas vezes. Ele tem que estar preparado."). Foi preciso definir a garantia de entrega e como o cliente distingue duplicatas ([09:25] Bruno: "E como ele diferencia?").
 
 ## Decisão
 
@@ -42,7 +42,7 @@ Não discutida na reunião. Plausível, mas deixaria o cliente sem meio de disti
 ### Positivas
 
 - Padrão de mercado, citado como usado por Stripe e GitHub ([09:25] Diego); "resolve 99% dos casos" ([09:25] Diego).
-- Combina com o retry e a DLQ: nenhum evento committado se perde por falha do cliente ([09:17] Larissa, [09:18] Diego).
+- Combina com o retry e a DLQ: evento committado não se perde silenciosamente por falha do cliente, pois vai para retry e depois DLQ ([09:17] Larissa, [09:18] Diego; análise deste ADR).
 - Evita coordenação de estado entre os dois lados.
 
 ### Negativas
@@ -52,7 +52,7 @@ Não discutida na reunião. Plausível, mas deixaria o cliente sem meio de disti
 
 ### Trade-off
 
-Troca-se a simplicidade de uma garantia exactly-once, que pareceria mais cômoda ao cliente, por uma entrega mais simples e robusta do nosso lado, ao custo de o cliente implementar a deduplicação por `X-Event-Id`. Isso foi aceito explicitamente em [09:25] Diego e [09:26] Larissa.
+Evita a complexidade e a coordenação do exactly-once; aceita duplicatas e transfere a dedup ao cliente ([09:25] Diego, [09:25] Sofia), que a faz por `X-Event-Id`. A decisão foi fechada em [09:26] Larissa.
 
 ## Referências
 

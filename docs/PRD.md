@@ -4,9 +4,9 @@
 | --- | --- |
 | Versão | 1.0 |
 | Data | 2026-10-11 |
-| Autoria | Larissa (Tech Lead) e Marcos (PM) [09:50] Larissa (abre o doc de design); Marcos é o dono do problema de negócio [09:00] |
+| Autoria | A definir (**Hipótese (PRD)**); Marcos é o dono do problema de negócio [09:00] Marcos; Larissa abriu o doc de design [09:50] Larissa |
 | Status | Em revisão |
-| Documentos relacionados | [RFC](RFC.md), [FDD](FDD.md), [ADRs](adrs/README.md), [Tracker](TRACKER.md) |
+| Documentos relacionados | [RFC](RFC.md), [FDD](FDD.md), [ADRs](adrs/), [Tracker](TRACKER.md), [Índice](INDEX.md) |
 
 Como ler este PRD: ele responde "por que e o quê". O "como construir" fica no [FDD](FDD.md), a proposta técnica e as alternativas ficam no [RFC](RFC.md) e cada decisão fechada tem um ADR. Aqui não se repete detalhe técnico.
 
@@ -30,9 +30,11 @@ Convenções:
 
 ## Problema e motivação
 
+Prioridade e impacto são avaliação do PRD (**Hipótese (PRD)**).
+
 - **PRD-PROB-01** (prioridade: Alta; impacto: Alto): hoje os 3 clientes B2B descobrem mudanças de status consultando `GET /orders` de tempos em tempos. Isso deixa a integração lenta e cara para eles [09:00] Marcos.
 - **PRD-PROB-02** (prioridade: Alta; impacto: Alto, comercial): risco de churn. A Atlas Comercial sugeriu que, se a plataforma não entregar a notificação até o fim do trimestre, pode migrar para um concorrente [09:00] Marcos. A Atlas pede a feature para o fim de novembro [09:45] Marcos.
-- **PRD-PROB-03** (prioridade: Média; impacto: Médio): o atraso percebido pelo cliente. O importante para eles é "não ficar pendurado" nem precisar atualizar manualmente [09:02] Marcos.
+- **PRD-PROB-03** (prioridade: Média; impacto: Médio): o atraso percebido pelo cliente. Nas palavras de Marcos: "O importante é que não fique pendurado e eles tenham que ficar atualizando manualmente" [09:02] Marcos.
 - **PRD-PROB-04** (prioridade: Alta; impacto: Alto, técnico): o sistema atual não tem nenhum mecanismo de notificação externa, evento, fila ou processo em background (`src/modules/orders/order.service.ts`, `package.json`). E a mudança de status já é uma transação pesada, em que um cliente lento ou fora do ar não pode travar outros pedidos nem causar rollback [09:04] Bruno.
 - **PRD-PROB-05** (prioridade: Média; impacto: Médio, segurança): enviar dados de pedidos para fora da infraestrutura exige que o cliente consiga validar a origem e a integridade de cada requisição [09:19] Sofia.
 
@@ -72,9 +74,11 @@ Cenários de uso (ilustrativos; os exemplos de nomes e valores são **Hipótese 
 | **PRD-OBJ-04** | Entregar mesmo com o cliente instável | Re-tentativas por evento e intervalos | 5 tentativas com backoff 1m/5m/30m/2h/12h (a reunião não disse se a 1ª entrega conta; leitura adotada: 5 re-envios após a 1ª falha, 14h36m, **Hipótese** a confirmar, ver RFC-OPEN-07); depois, fila de falhas | [09:17] Diego [09:17] Larissa |
 | **PRD-OBJ-05** | Não prender a plataforma a clientes lentos | Tempo máximo de espera por uma chamada ao cliente | 10 s por chamada; sem resposta vira falha e entra em re-tentativa | [09:42] Diego |
 | **PRD-OBJ-06** | Garantir autenticidade e integridade do que é enviado | Envios assinados com HMAC-SHA256, com secret única por endpoint | 100% dos envios assinados (**Hipótese (PRD)**: meta numérica derivada da regra de HMAC, que veio da reunião); rotação com 24 h de convivência | [09:22] Sofia |
-| **PRD-OBJ-07** | Cumprir o prazo da Atlas | Duração do projeto e data de entrega | 3 sprints, com revisão de segurança de no mínimo 2 dias úteis ao final, entrega no fim de novembro | [09:45] Marcos [09:46] Larissa [09:46] Sofia [09:47] Larissa |
+| **PRD-OBJ-07** | Cumprir o prazo da Atlas | Duração do projeto e data de entrega | 3 sprints [09:47] Larissa, com revisão de segurança de no mínimo 2 dias úteis ao final [09:46] Sofia; a Atlas quer para fim de novembro [09:45] Marcos; Marcos confirma o prazo com a Atlas [09:47] Marcos (data ainda não confirmada) | [09:45] Marcos [09:46] Larissa [09:46] Sofia [09:47] Larissa [09:47] Marcos |
 | **PRD-OBJ-08** | Reduzir a dependência dos clientes do polling em `GET /orders` | Chamadas de polling dos 3 clientes a `GET /orders` para detectar mudança de status | **Hipótese (PRD)**: queda de pelo menos 80% depois da adoção do webhook. A reunião não fixou número; a meta deve ser acordada por Marcos com os clientes | [09:00] Marcos (problema); meta: Hipótese (PRD) |
 | **PRD-OBJ-09** | Evitar a perda da conta da Atlas | Atlas ativa na plataforma após a entrega | Sem número na reunião. **Hipótese (PRD)**: meta qualitativa, "Atlas permanece cliente"; Marcos confirma o prazo com a Atlas | [09:00] Marcos [09:47] Marcos |
+
+Observação sobre PRD-OBJ-02: a frase de [09:10] Larissa é "A latência mínima vai ser 2 segundos no pior caso"; na prática é o intervalo máximo adicionado pelo polling (leitura do PRD, **Hipótese (PRD)**).
 
 ## Escopo
 
@@ -123,10 +127,10 @@ Cada requisito indica: descrição, fluxo principal, fluxos alternativos e exce�
 
 ### **PRD-FR-01** Cadastrar webhook
 
-Descrição: o cliente cadastra um webhook informando a URL e a lista de status que deseja receber. A plataforma gera a secret e a devolve apenas na criação.
+Descrição: o cliente cadastra um webhook informando a URL e a lista de status que deseja receber. A plataforma gera a secret e a devolve na criação [09:31] Marcos ("devolvida na criação"). **Hipótese (PRD)**: "apenas" na criação, ou seja, a secret não é devolvida de novo depois; a reunião não disse isso.
 
 - **Fluxo principal**: usuário autenticado envia `POST` de cadastro com `customerId`, URL https e lista de status; o sistema valida, grava e responde com os dados do webhook e a secret gerada.
-- **Fluxos alternativos e exceções**: URL com `http` é recusada com erro de validação; customer inexistente é recusado; **Hipótese (PRD)**: a secret não é devolvida de novo depois (a reunião só disse que ela é "devolvida na criação" [09:31] Marcos); para obter outra, ver PRD-FR-08.
+- **Fluxos alternativos e exceções**: URL com `http` é recusada com erro de validação [09:23] Sofia; **Hipótese (FDD)**: customer inexistente é recusado; para obter outra secret, ver PRD-FR-08.
 - **Erros previstos**: ver FDD-ERR-02, FDD-ERR-11, FDD-ERR-12 e FDD-ERR-13 (FDD, seção 7, Matriz de erros); o papel de `WEBHOOK_INVALID_URL` frente ao erro de validação genérico segue em aberto (Q-03 do FDD).
 - **Prioridade**: Alta.
 - Origem: [09:31] Marcos [09:21] Bruno [09:23] Sofia [09:28] Bruno. Contrato: FDD-CONTRATO-01.
@@ -136,7 +140,7 @@ Descrição: o cliente cadastra um webhook informando a URL e a lista de status 
 Descrição: o `customerId` identifica de quem é o webhook e NÃO vem do JWT, porque o JWT é do usuário operador, não do cliente.
 
 - **Fluxo principal**: o `customerId` é enviado no body (cadastro) ou no path, como definido em [09:32] Larissa; na listagem ele é enviado como parâmetro de consulta (**Hipótese (FDD)**, FDD-CONTRATO-02, a reunião só fala em body ou path), e o endpoint é autenticado normalmente.
-- **Fluxos alternativos e exceções**: listagem sem `customerId` é recusada. Marcos disse inicialmente "customer_id implícito do JWT" [09:31] e foi corrigido logo depois [09:32]; vale a correção.
+- **Fluxos alternativos e exceções**: **Hipótese (PRD)**: listagem sem `customerId` é recusada. Marcos disse inicialmente "customer_id implícito do JWT" [09:31] e foi corrigido logo depois [09:32]; vale a correção.
 - **Erros previstos**: ver FDD-ERR-11 e FDD-ERR-13.
 - **Prioridade**: Alta.
 - Origem: [09:32] Bruno [09:32] Marcos [09:32] Larissa. Contrato: FDD-CONTRATO-12.
@@ -146,7 +150,7 @@ Descrição: o `customerId` identifica de quem é o webhook e NÃO vem do JWT, p
 Descrição: o cliente altera um webhook existente (por exemplo, a URL e a lista de status).
 
 - **Fluxo principal**: `PATCH` do webhook com os campos alterados; o sistema valida e devolve o webhook atualizado, sem a secret (**Hipótese (PRD)**, ver PRD-NFR-15).
-- **Fluxos alternativos e exceções**: webhook inexistente; nova URL `http`; as mesmas regras de URL do cadastro valem na edição.
+- **Fluxos alternativos e exceções**: webhook inexistente; nova URL `http`; **Hipótese (PRD)**: as mesmas regras de URL do cadastro valem na edição.
 - **Erros previstos**: ver FDD-ERR-01, FDD-ERR-02 e FDD-ERR-11.
 - **Prioridade**: Média.
 - Origem: [09:33] Bruno. Contrato: FDD-CONTRATO-03.
@@ -155,7 +159,7 @@ Descrição: o cliente altera um webhook existente (por exemplo, a URL e a lista
 
 Descrição: o cliente remove um webhook que não quer mais usar.
 
-- **Fluxo principal**: `DELETE` do webhook; o sistema confirma a remoção e deixa de gerar eventos para ele.
+- **Fluxo principal**: `DELETE` do webhook; o sistema confirma a remoção e deixa de gerar eventos para ele. **Hipótese (FDD)**: a remoção é lógica (soft delete, FDD-DATA-09).
 - **Fluxos alternativos e exceções**: webhook inexistente. O destino dos eventos pendentes de um webhook removido ou inativo é detalhe do FDD (FDD-FLX-03 e Q-06), não decidido na reunião.
 - **Erros previstos**: ver FDD-ERR-01.
 - **Prioridade**: Média.
@@ -166,7 +170,7 @@ Descrição: o cliente remove um webhook que não quer mais usar.
 Descrição: o cliente lista os webhooks cadastrados de um customer.
 
 - **Fluxo principal**: `GET` com o `customerId`; o sistema devolve a lista, sem expor secrets (**Hipótese (PRD)**, ver PRD-NFR-15).
-- **Fluxos alternativos e exceções**: customer sem webhooks recebe lista vazia; `customerId` ausente é recusado.
+- **Fluxos alternativos e exceções**: customer sem webhooks recebe lista vazia; **Hipótese (PRD)**: `customerId` ausente é recusado.
 - **Erros previstos**: ver FDD-ERR-11 e FDD-ERR-13.
 - **Prioridade**: Média.
 - Origem: [09:33] Bruno. Contrato: FDD-CONTRATO-02.
@@ -183,7 +187,7 @@ Descrição: cada webhook escolhe quais status quer ouvir (ex: só SHIPPED e DEL
 
 ### **PRD-FR-07** Histórico de entregas
 
-Descrição: o cliente consulta os últimos 100 envios feitos para um webhook, com sucesso ou falha, payload, resposta recebida e tempo de resposta.
+Descrição: o cliente consulta os últimos 100 envios feitos para um webhook, com sucesso ou falha, payload, resposta recebida e tempo de resposta (100 é exemplo citado por Marcos, "Tipo 'esses são os últimos 100 webhooks...'" [09:34]; valor adotado a confirmar).
 
 - **Fluxo principal**: `GET /webhooks/:id/deliveries`; o sistema devolve os envios mais recentes, até 100.
 - **Fluxos alternativos e exceções**: webhook sem envios devolve lista vazia; o formato exato da paginação é **Hipótese (FDD)**.
@@ -195,7 +199,7 @@ Descrição: o cliente consulta os últimos 100 envios feitos para um webhook, c
 
 Descrição: o cliente pede uma nova secret pela API. A secret antiga continua válida por 24 horas em paralelo e depois deixa de valer.
 
-- **Fluxo principal**: o cliente aciona a rotação; o sistema gera e devolve a nova secret uma única vez; durante 24 h as duas assinaturas são aceitáveis para o cliente; depois só a nova.
+- **Fluxo principal**: o cliente aciona a rotação pela API; a antiga fica válida por 24 horas em paralelo e depois deixa de valer [09:21] Sofia. **Hipótese (FDD)**: a nova secret é "devolvida uma única vez" e o worker assina com as duas durante a janela de 24 h (FDD-AC-16).
 - **Fluxos alternativos e exceções**: a reunião definiu a capacidade, mas NÃO a rota. A rota `POST /webhooks/:id/rotate-secret` é **Hipótese (FDD)**. Webhook inexistente ou inativo não rotaciona.
 - **Erros previstos**: ver FDD-ERR-01 e FDD-ERR-09 (**Hipótese (FDD)**).
 - **Prioridade**: Alta (vazamento de secret já ocorreu com um cliente).
@@ -215,8 +219,8 @@ Descrição: um ADMIN reprocessa manualmente um evento que esgotou as tentativas
 
 Descrição: a cada evento registrado, um worker em processo separado envia ao endpoint do cliente um `POST` com o payload JSON de `order.status_changed`, assinado com HMAC-SHA256 e acompanhado de headers de identificação do evento, da assinatura e do webhook, entre eles `X-Event-Id` e `X-Signature` (conjunto completo no FDD, seção 6).
 
-- **Fluxo principal**: o worker lê a cada 2 s os eventos pendentes mais antigos, assina o corpo com a secret do endpoint, envia com timeout de 10 s e marca o evento como entregue quando o cliente responde com sucesso.
-- **Fluxos alternativos e exceções**: sem resposta em 10 s ou resposta de falha, a tentativa conta como falha e segue para PRD-FR-11; o mesmo evento pode chegar mais de uma vez, com o mesmo `X-Event-Id` (at-least-once); o formato exato do valor de `X-Signature` e se a data do envio entra na assinatura não foram definidos (FDD Q-02, RFC-OPEN-08).
+- **Fluxo principal**: o worker lê a cada 2 s os eventos pendentes mais antigos, assina o corpo com a secret do endpoint, envia com timeout de 10 s e marca o evento como entregue quando o cliente responde com sucesso (**Hipótese (FDD)**: sucesso é resposta 2xx; a reunião só define que quem "não responde em 10s" é falha [09:42] Diego).
+- **Fluxos alternativos e exceções**: sem resposta em 10 s ou resposta de falha, a tentativa conta como falha e segue para PRD-FR-11; o mesmo evento pode chegar mais de uma vez [09:24] Diego, com o mesmo `X-Event-Id` (inferência, **Hipótese (PRD)**, apoiada em [09:25] Diego: o id é "único por evento" e o cliente deduplica por ele); o formato exato do valor de `X-Signature` e se a data do envio entra na assinatura não foram definidos (FDD Q-02, RFC-OPEN-08).
 - **Erros previstos** (falhas internas de entrega, que não chegam ao cliente da API): ver FDD-ERR-03, FDD-ERR-05 e FDD-ERR-06 (**Hipótese (FDD)**).
 - **Prioridade**: Alta.
 - Origem: [09:09] Diego [09:11] Diego [09:20] Sofia [09:42] Diego [09:44] Diego [09:44] Sofia [09:25] Diego. Ver [ADR-002](adrs/ADR-002-worker-separado-em-polling.md), [ADR-004](adrs/ADR-004-hmac-sha256-secret-por-endpoint.md) e [ADR-005](adrs/ADR-005-entrega-at-least-once-com-x-event-id.md).
@@ -245,7 +249,7 @@ Descrição: o evento é registrado na mesma transação da mudança de status d
 
 Descrição: o evento é um JSON com `event_id`, `event_type` (`order.status_changed`), `timestamp` em ISO 8601, `order_id`, `order_number`, `from_status`, `to_status`, `customer_id` e campos básicos do pedido, como `total_cents`. Não inclui `items`. O conteúdo é fixado (snapshot) no momento em que o evento é registrado.
 
-- **Fluxo principal**: ao registrar o evento, o sistema monta o payload com o estado do pedido naquele instante e o guarda; todas as tentativas e replays enviam esse mesmo conteúdo.
+- **Fluxo principal**: ao registrar o evento, o sistema monta o payload com o estado do pedido naquele instante e o guarda; todas as tentativas e replays enviam esse mesmo conteúdo (inferência, **Hipótese (PRD)**, apoiada em [09:25] Diego e [09:52] Larissa; a reunião não falou de replay nem de re-tentativa nesse ponto).
 - **Fluxos alternativos e exceções**: se o pedido mudar depois, o evento já registrado não é alterado; o cliente que precisa dos itens consulta `GET /orders/:id`; payload acima de 64 KB é erro, nunca é truncado.
 - **Erros previstos**: ver FDD-ERR-04 (**Hipótese (FDD)**).
 - **Prioridade**: Alta.
@@ -256,7 +260,7 @@ Descrição: o evento é um JSON com `event_id`, `event_type` (`order.status_cha
 - **PRD-NFR-01** (performance): notificação em menos de 10 s entre a mudança de status e o primeiro envio, com o endpoint do cliente saudável [09:02] Marcos.
 - **PRD-NFR-02** (performance): polling do worker a cada 2 s; a latência mínima de 2 s no pior caso foi aceita [09:09] Diego [09:10] Larissa [09:10] Marcos.
 - **PRD-NFR-03** (performance): timeout de 10 s por chamada HTTP ao cliente; sem resposta é falha e marca para retry [09:42] Diego.
-- **PRD-NFR-04** (performance): payload de no máximo 64 KB; acima disso há erro, sem truncar. Larissa classificou como requisito não funcional, não como decisão arquitetural [09:23] Sofia [09:24] Diego [09:24] Larissa.
+- **PRD-NFR-04** (segurança e robustez; a categoria é do PRD, Larissa só o chamou de requisito não funcional [09:24]): payload de no máximo 64 KB; acima disso há erro, sem truncar. Larissa classificou como requisito não funcional, não como decisão arquitetural [09:23] Sofia [09:24] Diego [09:24] Larissa.
 - **PRD-NFR-05** (disponibilidade e confiabilidade): o worker é um processo separado da API; reiniciar a API não derruba o worker [09:11] Diego. Um worker parado não impede a mudança de status de pedidos, e os eventos ficam pendentes e duráveis (consequência do desenho, FDD-RES-12).
 - **PRD-NFR-06** (confiabilidade): entrega at-least-once, com `X-Event-Id` estável para deduplicação no cliente [09:24] Diego [09:25] Diego.
 - **PRD-NFR-07** (confiabilidade): retry com 5 tentativas e backoff 1m/5m/30m/2h/12h (a reunião não disse se a 1ª entrega conta; leitura adotada: 5 re-envios após a 1ª falha, 14h36m, **Hipótese** a confirmar, ver RFC-OPEN-07); sem retry indefinido [09:17] Larissa.
@@ -276,14 +280,16 @@ Descrição: o evento é um JSON com `event_id`, `event_type` (`order.status_cha
 
 Cada decisão foi fechada na reunião e tem um ADR. A justificativa e o trade-off abaixo resumem o ADR; o detalhe está no arquivo vinculado.
 
-| ID | Decisão | Justificativa | Trade-off | ADR |
+Os trade-offs são análise do PRD/ADRs, não falas da reunião, salvo quando há colchete de origem (**Hipótese (PRD)**).
+
+| ID | Decisão | Justificativa | Trade-off (**Hipótese (PRD)**) | ADR |
 | --- | --- | --- | --- | --- |
 | **PRD-DEC-01** | Padrão outbox no MySQL existente | Garante que commit registra o evento e rollback o apaga; evita infraestrutura nova para um time pequeno [09:06] Diego [09:07] Diego [09:08] Larissa | Troca a simplicidade de um HTTP direto por consistência, ao custo de uma tabela extra, um worker e mais carga no MySQL | [ADR-001](adrs/ADR-001-outbox-no-mysql.md) |
 | **PRD-DEC-02** | Worker em processo separado, com polling de 2 s | Não perde o worker quando a API reinicia; MySQL não tem LISTEN/NOTIFY e 2 s cumpre "menos de 10 s" [09:09] Diego [09:10] Larissa [09:11] Diego | Latência mínima de 2 s no pior caso e ordering só por pedido com um único worker, em troca de simplicidade | [ADR-002](adrs/ADR-002-worker-separado-em-polling.md) |
 | **PRD-DEC-03** | Retry com backoff 1m/5m/30m/2h/12h, 5 tentativas (leitura adotada: 5 re-envios após a 1ª falha, 14h36m, **Hipótese** a confirmar, ver RFC-OPEN-07) e DLQ em tabela separada | Cobre manutenções longas (2 h) sem deixar evento pendurado para sempre; DLQ serve de evidência e de base para replay [09:15] Diego [09:16] Diego [09:17] Larissa [09:18] Diego | Eventos ficam em retry por até cerca de 15 horas, e indisponibilidades maiores exigem replay manual por ADMIN | [ADR-003](adrs/ADR-003-retry-backoff-exponencial-e-dlq.md) |
 | **PRD-DEC-04** | HMAC-SHA256 com secret por endpoint e rotação com 24 h | O cliente valida origem e integridade; secret única limita o dano de um vazamento [09:19] Sofia [09:21] Sofia [09:22] Sofia | Mais complexidade de modelo e de rotação, e prazo reservado para revisão de segurança, em troca de menor raio de dano | [ADR-004](adrs/ADR-004-hmac-sha256-secret-por-endpoint.md) |
 | **PRD-DEC-05** | Entrega at-least-once com `X-Event-Id` | Padrão de mercado (Stripe, GitHub); exactly-once exigiria coordenação dos dois lados [09:25] Diego [09:26] Larissa | O cliente precisa deduplicar; duplicatas são possíveis. Marcos documentará no portal [09:26] Marcos | [ADR-005](adrs/ADR-005-entrega-at-least-once-com-x-event-id.md) |
-| **PRD-DEC-06** | Reuso dos padrões do projeto | Consistência e velocidade dentro de 3 sprints: módulo igual aos outros, `AppError`, Pino, error middleware, Zod e `requireRole` [09:27] Bruno [09:30] Larissa | Herda as limitações dos padrões atuais, em troca de não desenhar convenções novas | [ADR-006](adrs/ADR-006-reuso-dos-padroes-do-projeto.md) |
+| **PRD-DEC-06** | Reuso dos padrões do projeto | Evita convenções novas; reuso máximo [09:30] Larissa: módulo igual aos outros, `AppError`, Pino, error middleware, Zod e `requireRole` [09:27] Bruno. **Hipótese (PRD)**: ganho de velocidade para o prazo de 3 sprints | Herda as limitações dos padrões atuais, em troca de não desenhar convenções novas | [ADR-006](adrs/ADR-006-reuso-dos-padroes-do-projeto.md) |
 | **PRD-DEC-07** | Evento registrado dentro da transação do `changeStatus` (detalhe da publicação no FDD, seção 11), com filtro de status na inserção | Sem isso "perde a garantia toda"; filtrar na inserção economiza linhas [09:40] Bruno [09:41] Diego [09:34] Bruno | Pequeno acoplamento e mais carga na transação crítica; uma falha do webhook pode derrubar a mudança de status | [ADR-007](adrs/ADR-007-publicacao-do-evento-na-transacao-do-change-status.md) |
 | **PRD-DEC-08** | Payload como snapshot renderizado na inserção, sem `items`, com limite de 64 KB e ids em UUID | O evento reflete o pedido no momento da mudança, sem "caso esquisito" depois [09:52] Larissa [09:43] Diego [09:51] Larissa | Mais dados armazenados e trabalho extra na transação; o cliente busca os itens por outra chamada | [ADR-008](adrs/ADR-008-payload-snapshot-na-insercao-da-outbox.md) |
 
@@ -295,7 +301,7 @@ Organizacionais:
 - **PRD-DEP-02**: portal de desenvolvedor documentado pelo Marcos: como integrar via API, e o aviso destacado sobre at-least-once e deduplicação por `X-Event-Id` [09:26] Marcos [09:40] Marcos.
 - **PRD-DEP-03**: confirmação do prazo (fim de novembro) com a Atlas, a cargo do Marcos, e atualização dos clientes sobre a decisão [09:47] Marcos [09:49] Marcos.
 - **PRD-DEP-04**: sessão de revisão do design doc com Bruno e Diego, marcada por Larissa antes de começar a codar [09:50] Larissa.
-- **PRD-DEP-05**: time de frontend, apenas para um futuro painel do cliente, que está fora de escopo (PRD-OUT-03) [09:40] Larissa.
+- **PRD-DEP-05**: time de frontend, dependência futura de uma feature fora de escopo (o painel do cliente, PRD-OUT-03) e não dependência desta entrega [09:40] Larissa.
 
 Técnicas:
 
@@ -313,19 +319,19 @@ Probabilidade e impacto são avaliação do PRD (**Hipótese (PRD)**), alinhada 
 - **Probabilidade**: Alta. **Impacto**: Médio.
 - Origem: [09:24] Diego [09:25] Sofia ("joga responsabilidade pro cliente"). Ver FDD-RISK-01.
 - Mitigação:
-  - `X-Event-Id` único e estável em re-tentativas e replay [09:25] Diego.
+  - `X-Event-Id` único por evento [09:25] Diego; que ele seja estável em re-tentativas e replay é inferência (**Hipótese (PRD)**, apoiada em [09:25] Diego e [09:52] Larissa).
   - Documentação destacada no portal de desenvolvedor, a cargo do Marcos [09:26] Marcos.
   - **Hipótese (PRD)**: exemplo de deduplicação no portal.
-- Plano de contingência: o cliente reconcilia pelo histórico de entregas (PRD-FR-07).
+- Plano de contingência: **Hipótese (PRD)**: o cliente reconcilia pelo histórico de entregas (PRD-FR-07).
 
-### **PRD-RISK-02** Prazo apertado de 3 sprints, com revisão de segurança no fim
+### **PRD-RISK-02** Prazo de 3 sprints, com revisão de segurança no fim
 
 - **Probabilidade**: Média. **Impacto**: Alto (a Atlas pode migrar para um concorrente [09:00] Marcos).
 - Origem: [09:46] Larissa [09:47] Larissa [09:45] Marcos.
 - Mitigação:
-  - Reuso máximo dos padrões do projeto para ganhar velocidade [09:30] Larissa.
-  - Ordem de trabalho estimada na reunião [09:46] Larissa: 1 sprint para outbox e DLQ; 1 sprint para worker e retry; meio sprint para CRUD e deliveries; meio sprint para a integração no `order.service` e testes ponta a ponta; HMAC, schemas e validações "mais um pouco"; e a revisão da Sofia (no mínimo 2 dias úteis) no fim, na sprint 3 [09:47] Larissa.
-  - Marcos confirma o prazo com a Atlas cedo [09:47] Marcos.
+  - Reuso máximo dos padrões do projeto [09:30] Larissa (**Hipótese (PRD)**: como forma de ganhar velocidade).
+  - Ordem de trabalho estimada na reunião [09:46] Larissa: 1 sprint para outbox e DLQ; 1 sprint para worker e retry; meio sprint para CRUD e deliveries; meio sprint para a integração no `order.service` e testes ponta a ponta; HMAC, schemas e validações "mais um pouco"; e a revisão da Sofia (no mínimo 2 dias úteis) no fim [09:47] Larissa.
+  - Marcos confirma o prazo com a Atlas [09:47] Marcos (**Hipótese (PRD)**: que isso aconteça cedo).
 - Plano de contingência: **Hipótese (PRD)**: Marcos renegocia o prazo com a Atlas se algo escorregar. **Hipótese (PRD)**: a revisão de segurança não é cortada para cumprir prazo (Larissa só combinou "três sprints com a revisão da Sofia incluída no fim" [09:47]).
 
 ### **PRD-RISK-03** Vazamento de secret
@@ -336,7 +342,7 @@ Probabilidade e impacto são avaliação do PRD (**Hipótese (PRD)**), alinhada 
   - Secret única por endpoint, limitando o dano a um cadastro [09:21] Sofia.
   - Secret devolvida na criação [09:31] Marcos e na rotação; **Hipótese (PRD)**: nunca em consultas (a reunião não definiu; FDD-CONTRATO-12).
   - Revisão de segurança da Sofia sobre HMAC e geração de secret [09:46] Sofia.
-- Plano de contingência: rotação imediata pela API, com 24 h de convivência para o cliente migrar [09:21] Sofia.
+- Plano de contingência: **Hipótese (PRD)**: rotação imediata pela API, com 24 h de convivência para o cliente migrar (a capacidade de rotação vem de [09:21] Sofia; usá-la como contingência é análise do PRD).
 
 ### **PRD-RISK-04** Ordering ao escalar o worker
 
@@ -360,9 +366,9 @@ Probabilidade e impacto são avaliação do PRD (**Hipótese (PRD)**), alinhada 
 ### **PRD-RISK-06** Falha na outbox derruba a mudança de status
 
 - **Probabilidade**: Baixa. **Impacto**: Alto.
-- Origem: [09:40] Bruno [09:41] Diego (aceito conscientemente). Ver ADR-007 e RFC-IMP-05.
+- Origem: [09:40] Bruno [09:41] Diego (decidido como requisito de atomicidade [09:40] Bruno [09:41] Diego). Ver ADR-007 e RFC-IMP-05.
 - Mitigação:
-  - Testes de atomicidade e testes de ponta a ponta em `changeStatus` [09:46] Larissa.
+  - **Hipótese (PRD)**: testes de atomicidade e testes de ponta a ponta em `changeStatus` (os testes ponta a ponta aparecem na reunião só como parte da estimativa de esforço [09:46] Larissa).
   - Índices e consulta única na inserção do evento (FDD-RISK-08, **Hipótese (FDD)**).
 - Plano de contingência: **Hipótese (PRD)**: reverter a integração em `order.service.ts` (uma chamada) e manter a API de pedidos funcionando sem webhooks.
 
@@ -373,16 +379,16 @@ Probabilidade e impacto são avaliação do PRD (**Hipótese (PRD)**), alinhada 
 - Mitigação:
   - Os eventos são duráveis: reiniciar o worker drena o acúmulo e nada se perde (FDD-RISK-05).
   - Sinal de saúde do worker, por exemplo, idade do evento pendente mais antigo (**Hipótese (FDD)**, FDD-OBS-05).
-- Plano de contingência: reinício do worker e, para eventos que esgotaram as tentativas, replay por ADMIN (PRD-FR-09).
+- Plano de contingência: **Hipótese (PRD)**: reinício do worker e, para eventos que esgotaram as tentativas, replay por ADMIN (PRD-FR-09).
 
 ### **PRD-RISK-08** CRUD aberto a qualquer role autenticada, com `customerId` no body
 
-- **Probabilidade**: Média. **Impacto**: Alto (um usuário autenticado poderia cadastrar uma URL própria para receber pedidos de outro customer).
-- Origem: [09:32] Larissa [09:37] Sofia ("por enquanto sim"). Ver FDD-RISK-10.
+- **Probabilidade**: Média. **Impacto**: Alto (**Hipótese (PRD)**: cenário de abuso, um usuário autenticado cadastrar uma URL própria para receber pedidos de outro customer).
+- Origem: [09:32] Larissa [09:37] Sofia ("Por enquanto sim. Mais pra frente a gente pode endurecer."). Ver FDD-RISK-10.
 - Mitigação:
-  - Risco aceito conscientemente nesta fase [09:37] Sofia.
-  - Levar o ponto à revisão de segurança (FDD-RISK-10).
-- Plano de contingência: endurecer permissões em fase futura (PRD-OUT-16) [09:37] Sofia.
+  - Permissão aberta aceita por enquanto [09:37] Sofia.
+  - **Hipótese (PRD)**: levar o ponto à revisão de segurança (FDD-RISK-10).
+- Plano de contingência: endurecer permissões em fase futura (PRD-OUT-16) [09:37] Sofia ("mais pra frente a gente pode endurecer").
 
 ### **PRD-RISK-09** Crescimento da outbox sem arquivamento
 
@@ -406,23 +412,23 @@ Checklist objetivo e verificável no nível do produto. O detalhe técnico (camp
 - [ ] **PRD-AC-07**: um endpoint que não responde em 10 s tem a tentativa encerrada como falha [09:42] Diego (FDD-AC-10).
 - [ ] **PRD-AC-08**: as 5 tentativas seguem o backoff 1 min, 5 min, 30 min, 2 h e 12 h (leitura adotada: 5 re-envios após a 1ª falha, 14h36m, **Hipótese** a confirmar, ver RFC-OPEN-07); esgotadas, o evento vai para a DLQ e não há nova tentativa automática [09:17] Larissa [09:18] Diego (FDD-AC-11, FDD-AC-12).
 - [ ] **PRD-AC-09**: o replay é restrito a ADMIN, recoloca o evento como pendente e registra em log quem o executou [09:36] Sofia [09:36] Larissa (FDD-AC-13, FDD-AC-14).
-- [ ] **PRD-AC-10**: a rotação devolve a nova secret uma vez; por 24 h as duas assinaturas são válidas e depois só a nova [09:21] Sofia [09:22] Sofia (FDD-AC-16).
+- [ ] **PRD-AC-10**: o cliente consegue pedir nova secret pela API; a antiga fica válida por 24 horas em paralelo e depois deixa de valer [09:21] Sofia [09:22] Sofia. **Hipótese (FDD)**: a rotação devolve a nova secret uma única vez e o worker assina com as duas durante a janela, só a nova depois (FDD-AC-16).
 - [ ] **PRD-AC-11**: **Hipótese (PRD)**: nenhuma resposta de consulta traz a secret e nenhum log produzido nos testes a contém (ver PRD-NFR-15; FDD-AC-17).
 - [ ] **PRD-AC-12**: URL `http` é recusada com erro de validação e URL https é aceita [09:23] Sofia (FDD-AC-18).
-- [ ] **PRD-AC-13**: cadastro, edição, remoção, listagem e rotação funcionam para qualquer role autenticada, com o `customerId` vindo do body ou do path [09:32] Larissa (consulta na listagem: **Hipótese (FDD)**) [09:36] Marcos [09:37] Sofia (FDD-AC-19).
-- [ ] **PRD-AC-14**: o histórico de entregas devolve no máximo 100 envios, com resultado, payload, resposta e tempo de resposta [09:34] Marcos (FDD-AC-20).
-- [ ] **PRD-AC-15**: o worker roda como processo separado da API, e a API continua mudando status com o worker parado [09:11] Larissa [09:11] Diego (FDD-AC-23).
-- [ ] **PRD-AC-16**: os testes existentes continuam passando e o contrato de resposta da mudança de status do pedido não muda (FDD-AC-25).
+- [ ] **PRD-AC-13**: cadastro, edição, remoção e listagem funcionam para qualquer role autenticada ("o resto do CRUD de configuração" [09:36] Marcos [09:37] Sofia), com o `customerId` vindo do body ou do path [09:32] Larissa (consulta na listagem: **Hipótese (FDD)**). **Hipótese (PRD)**: a rotação de secret também vale para qualquer role autenticada, pois a reunião não a cobriu (FDD-AC-19).
+- [ ] **PRD-AC-14**: o histórico de entregas devolve no máximo 100 envios (100 é exemplo citado por Marcos, valor adotado a confirmar), com resultado, payload, resposta e tempo de resposta [09:34] Marcos (FDD-AC-20).
+- [ ] **PRD-AC-15**: o worker roda como processo separado da API [09:11] Larissa [09:11] Diego; **Hipótese (FDD)**: a API continua mudando status com o worker parado, consequência do desenho (FDD-RES-12, FDD-AC-23).
+- [ ] **PRD-AC-16**: **Hipótese (PRD)**: os testes existentes continuam passando e o contrato de resposta da mudança de status do pedido não muda (sem origem na reunião; ver FDD-AC-25).
 - [ ] **PRD-AC-17**: a revisão de segurança da Sofia (HMAC e geração de secret, mínimo de 2 dias úteis) está concluída antes do deploy [09:46] Sofia [09:47] Larissa (FDD-AC-26).
 - [ ] **PRD-AC-18**: a documentação do portal de desenvolvedor destaca at-least-once e deduplicação por `X-Event-Id` e explica como integrar pela API [09:26] Marcos [09:40] Marcos.
-- [ ] **PRD-AC-19**: nenhuma funcionalidade listada em Fora de escopo é entregue (email, rate limiting de saída, dashboard, webhook de entrada, arquivamento automático, ordering global com múltiplos workers); os itens descartados (PRD-OUT-xx de alternativas) estão apenas registrados como decisões.
+- [ ] **PRD-AC-19**: nenhuma funcionalidade listada em Fora de escopo é entregue: email [09:37] Larissa, rate limiting de saída [09:39] Diego [09:39] Larissa, dashboard [09:40] Larissa, webhook de entrada [09:02] Marcos, arquivamento automático [09:08] Diego, ordering global com múltiplos workers [09:13] Larissa; os itens descartados (PRD-OUT-xx de alternativas) estão apenas registrados como decisões. PRD-OUT-20 (evento na criação do pedido) fica fora desta lista por ser hipótese do PRD, não decisão da reunião.
 
 ## Estratégia de testes e validação
 
 O repositório já usa Vitest e supertest em `tests/` (`tests/orders.test.ts`, `tests/auth.test.ts`, `tests/setup.ts`, `tests/helpers/factories.ts`; `package.json`). A reunião só pede explicitamente "testes ponta a ponta" na integração com o `order.service` [09:46] Larissa. O restante da estratégia é **Hipótese (PRD)**, e os casos detalhados estão nos critérios de aceite técnicos do FDD (seção 12) e em FDD-INT-15.
 
 - **PRD-TEST-01** (testes de integração com supertest): cobrem CRUD de webhooks, rotação, histórico de entregas e replay com os papéis OPERATOR, ADMIN e sem token, validação de URL https e de `customerId`. Origem: **Hipótese (PRD)**, no padrão de `tests/orders.test.ts`.
-- **PRD-TEST-02** (testes de atomicidade): mudança de status com falha injetada no registro do evento (rollback) e com sucesso (commit com os eventos esperados), incluindo o filtro por status. Origem: [09:40] Bruno [09:46] Larissa.
+- **PRD-TEST-02** (testes de atomicidade): mudança de status com falha injetada no registro do evento (rollback) e com sucesso (commit com os eventos esperados), incluindo o filtro por status. Origem: **Hipótese (PRD)**, derivada da regra de atomicidade [09:40] Bruno (a reunião não pede testes de atomicidade; só cita "testes ponta a ponta" na estimativa [09:46] Larissa).
 - **PRD-TEST-03** (testes de ponta a ponta): do `PATCH /orders/:id/status` até o envio ao endpoint do cliente, com um servidor HTTP de teste que simule sucesso, resposta de falha e atraso maior que 10 s. Origem: [09:46] Larissa; o servidor simulado é **Hipótese (PRD)**.
 - **PRD-TEST-04** (testes de unidade): backoff 1m/5m/30m/2h/12h com relógio controlado, limite de 64 KB, cálculo da assinatura HMAC-SHA256 com secret conhecida e janela de 24 h da rotação. Origem: **Hipótese (PRD)**, derivada de [09:17] Larissa, [09:24] Larissa e [09:22] Sofia.
 - **PRD-TEST-05** (testes do worker): at-least-once (mesmo `X-Event-Id` ao reenviar), esgotamento para a DLQ e leitura do mais antigo para o mais novo. Origem: **Hipótese (PRD)**, derivada de [09:12] Diego e [09:25] Diego.

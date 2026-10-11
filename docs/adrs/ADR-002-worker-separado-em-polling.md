@@ -28,7 +28,7 @@ O arquivo com a lógica de processamento ficará no módulo de webhooks (`src/mo
 ## Alternativas Consideradas
 
 1. **Trigger do banco para notificar o worker (reatividade).** Rejeitada. O MySQL não tem listener nativo como o NOTIFY/LISTEN do Postgres; trigger só executa SQL e não notifica processo externo, e avisar o worker exigiria improviso (escrever em arquivo ou chamar um endpoint). Polling de 2 s já atende "abaixo de 10 segundos". Fonte: [09:09] Bruno (propôs) e [09:09] Diego (rejeitou).
-2. **Worker dentro do mesmo processo/instância da API.** Rejeitada. Se a API reinicia, o worker é perdido. Fonte: [09:11] Diego.
+2. **Worker dentro do mesmo processo/instância da API.** Excluída como requisito por Diego ([09:11]), não proposta por ninguém: "o worker tem que rodar como processo separado", pois se a API reinicia, o worker é perdido. Fonte: [09:11] Diego.
 3. **Escalar para múltiplos workers em paralelo.** Adiada, não decidida. Perderia a garantia de ordering; particionar por `order_id` ou usar lock pessimista é "problema do futuro". Fonte: [09:12] Diego, [09:13] Diego, [09:13] Larissa.
 
 ## Consequências
@@ -42,9 +42,9 @@ O arquivo com a lógica de processamento ficará no módulo de webhooks (`src/mo
 
 ### Negativas
 
-- Mais um processo para operar e monitorar (deploy, restart, shutdown próprios), com seu próprio PrismaClient e pool de conexões ([09:30] Bruno).
+- Mais um processo, com seu próprio PrismaClient e pool de conexões ([09:30] Bruno). Que isso implique operar e monitorar (deploy, restart, shutdown próprios) é análise deste ADR (**Hipótese**).
 - Consultas periódicas ao MySQL a cada 2 s, mesmo sem eventos (consequência direta do polling, [09:09] Diego).
-- Single-worker é ponto único de processamento; escalar exige decisão futura ([09:13] Diego). Estratégia de escala continua em aberto.
+- Single-worker é ponto único de processamento (análise deste ADR, **Hipótese**); escalar exige decisão futura ([09:13] Diego). Estratégia de escala continua em aberto.
 
 ### Trade-off
 
