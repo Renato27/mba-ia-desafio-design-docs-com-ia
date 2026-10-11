@@ -16,14 +16,14 @@ O ponto central não é "resumir a reunião", e sim separar o que foi **decidido
 | --- | --- |
 | **Claude Code** (modelo Claude Sonnet 5.5) | Ferramenta principal: leitura do código e da transcrição, orquestração do trabalho, geração, revisão e correção dos documentos. |
 | **Subagentes do Claude Code** (agentes `general-purpose` em paralelo) | Um agente por unidade de trabalho independente: ADRs 001-004, ADRs 005-008, FDD, RFC, PRD, Tracker (2 partes), revisão crítica e 3 agentes de correção. Cada um recebeu um briefing autocontido e escreveu só os seus arquivos. |
-| **Plugin do Notion (MCP)** | Fonte dos prompts do curso, lidos na área privada do workspace: "Prompt de Entrevista para Gerar PRD", "Prompt para geração de um FDD", "Prompt para geração de um HLD" e "Classificação geral de documentos". Os esqueletos de saída do PRD e do FDD vieram desses prompts. |
+| **Plugin do Notion (MCP)** | Acesso aos prompts do curso (entrevista de PRD, FDD e HLD), usados como ponto de partida para os esqueletos de saída do PRD e do FDD. O conteúdo desses prompts não está reproduzido neste repositório. |
 | **Scripts Python de validação** | Conferência mecânica: todo `[hh:mm] Nome` existe na transcrição com o falante correto, todo caminho de código citado existe, todo ID dos documentos tem linha no Tracker, ausência de travessão, links relativos. |
 
 Observações honestas: o prompt de RFC não existe no Notion, então o RFC seguiu o formato exigido pelo enunciado. Os plugins de ADR do curso (`adrs-management`) não foram usados: os ADRs foram escritos direto em MADR por agentes, porque o fluxo do plugin (mapear o código e identificar ADRs candidatos) parte de um código a documentar, e aqui as decisões já vinham prontas da reunião. Os diagramas Mermaid não foram renderizados por ferramenta, só revisados por leitura.
 
 ## Workflow adotado
 
-1. **Contextualização.** Leitura integral do enunciado, da transcrição e do código relevante (`order.service.ts`, `order.status.ts`, erros, middlewares, `app.ts`, `server.ts`, `schema.prisma`, `package.json`, testes). Em vez de repassar tudo a cada agente, consolidei uma **base de fatos compartilhada** (decisões com timestamp, requisitos, itens fora de escopo, questões em aberto, mapa do código com caminhos verificados, convenção de IDs, nomes fixos dos ADRs). Todos os agentes partiram dela e da transcrição, o que manteve nomes, números e IDs consistentes entre documentos escritos em paralelo.
+1. **Contextualização.** Leitura integral do enunciado, da transcrição e do código relevante (`order.service.ts`, `order.status.ts`, erros, middlewares, `app.ts`, `server.ts`, `schema.prisma`, `package.json`, testes). Em vez de repassar tudo a cada agente, consolidei uma **base de fatos compartilhada**, arquivo de trabalho que não foi versionado neste repositório (decisões com timestamp, requisitos, itens fora de escopo, questões em aberto, mapa do código com caminhos verificados, convenção de IDs, nomes fixos dos ADRs). Todos os agentes partiram dela e da transcrição, o que manteve nomes, números e IDs consistentes entre documentos escritos em paralelo.
 2. **ADRs primeiro** (2 agentes em paralelo, em paralelo com o FDD): 8 ADRs em MADR cobrindo as 6 decisões principais mais duas decisões de integração.
 3. **RFC** (depois dos ADRs, para linkar e manter coerência) e, em paralelo, o **FDD** com as seções do prompt do curso mais "Integração com o sistema existente".
 4. **PRD** por último entre os grandes documentos, como consolidação de alto nível.
@@ -45,7 +45,7 @@ Ordem de dependência: transcrição e código, base de fatos, ADRs, FDD e RFC, 
 
 ## Prompts customizados
 
-### 1. Briefing de ADRs (adaptado do formato MADR e dos prompts do curso)
+### 1. Briefing de ADRs (versão resumida do prompt enviado aos agentes)
 
 ```text
 Você escreve ADRs (formato MADR, pt-BR) para o desafio de design docs. Leia PRIMEIRO,
@@ -66,7 +66,7 @@ NÃO altere nenhum outro arquivo. Ao final reporte inconsistências entre a base
 e a transcrição.
 ```
 
-### 2. Revisão crítica independente (prompt dirigido, só leitura)
+### 2. Revisão crítica independente (versão resumida do prompt enviado, só leitura)
 
 ```text
 Você é revisor crítico e independente do pacote de design docs. NÃO edite arquivos: só
@@ -91,7 +91,7 @@ estava correto.
 
 ### Prompts do curso reaproveitados
 
-Os esqueletos de saída do **PRD** ("Esqueleto de PRD") e do **FDD** ("Esqueleto de FDD") do Notion foram incorporados aos briefings dos agentes, junto com suas regras de estilo: não inventar detalhe técnico sem rotular como hipótese, não usar travessão, e em "Observabilidade" especificar métricas, logs e tracing.
+Os esqueletos de saída de **PRD** e **FDD** dos prompts do curso foram adaptados e incorporados aos briefings dos agentes, junto com suas regras de estilo: não inventar detalhe técnico sem rotular como hipótese, não usar travessão, e em "Observabilidade" especificar métricas, logs e tracing.
 
 ## Iterações e ajustes
 

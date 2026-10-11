@@ -376,31 +376,29 @@ Este documento liga cada item registrado nos documentos do pacote (`docs/PRD.md`
 
 Estes itens aparecem nos documentos rotulados como **Hipótese** ou proposta e **não** têm fala da reunião nem arquivo de código que os sustente integralmente. Não são requisitos aprovados: devem ser aceitos, ajustados ou removidos na revisão do RFC.
 
-| ID | Documento | Observação |
-| --- | --- | --- |
-| PRD-OBJ-08 | `docs/PRD.md` | Meta de reduzir em 80% as chamadas de polling a `GET /orders`; o problema nasce em [09:00] Marcos, mas o número é proposta do PRD sem fala de origem. |
-| PRD-OBJ-09 | `docs/PRD.md` | Meta qualitativa "Atlas permanece cliente"; o risco de churn vem de [09:00] Marcos, a meta é proposta do PRD. |
-| PRD-NFR-09 | `docs/PRD.md` | Meta de disponibilidade em percentual; não foi discutida na reunião nem existe no código. |
-| PRD-TEST-09 | `docs/PRD.md` | Validação com a Atlas em ambiente de teste; proposta do PRD, a reunião só trata de confirmar o prazo ([09:47] Marcos). |
-| FDD-FLX-10 | `docs/FDD.md` | Recuperação de evento PROCESSING órfão por lease de 60 s; proposta do FDD. |
-| FDD-RES-10 | `docs/FDD.md` | Resiliência: repete a recuperação por lease de 60 s (FDD-FLX-10); proposta do FDD. |
-| FDD-RES-13 | `docs/FDD.md` | Não seguir redirects, truncar resposta armazenada em 4 KB e mitigar SSRF; proposta do FDD. |
-| FDD-DATA-08 | `docs/FDD.md` | Armazenamento da secret cifrada com AES-256-GCM; proposta do FDD (a reunião só pede que a secret exista, [09:21] Sofia, e que Sofia revise a geração, [09:46] Sofia). |
-| FDD-OBS-04 | `docs/FDD.md` | Métrica de contagem da outbox por status; proposta do FDD, a reunião não discutiu métricas. |
-| FDD-OBS-07 | `docs/FDD.md` | Métrica de tamanho da DLQ; proposta do FDD. |
-| FDD-OBS-08 | `docs/FDD.md` | Tracing por correlação de ids e `attemptId`; proposta do FDD, a reunião não discutiu tracing. |
-| FDD-OBS-10 | `docs/FDD.md` | Nomes de spans no estilo OpenTelemetry; proposta do FDD. |
-| FDD-Q-09 | `docs/FDD.md` | Questão sobre SSRF nas URLs cadastradas; levantada pela análise, não discutida na reunião. |
-| FDD-Q-16 | `docs/FDD.md` | Lista consolidada de hipóteses do FDD (batch de 10, lease de 60 s, 202 no replay e outras). |
-| FDD-ERR-07 | `docs/FDD.md` | Código WEBHOOK_DEAD_LETTER_NOT_FOUND para replay de id inexistente; o conceito de replay vem de [09:18] Diego, o código é proposta do FDD. |
-| FDD-ERR-08 | `docs/FDD.md` | Código WEBHOOK_DEAD_LETTER_ALREADY_REPLAYED (409) para replay repetido; proposta do FDD. |
-| FDD-ERR-09 | `docs/FDD.md` | Código WEBHOOK_INACTIVE (409) para replay ou rotação em webhook removido ou inativo; proposta do FDD. |
-| FDD-AC-15 | `docs/FDD.md` | Critério de aceite de replay repetido e de webhook inativo; deriva de FDD-ERR-08 e FDD-ERR-09, que são propostas do FDD. |
-| FDD-DATA-07 | `docs/FDD.md` | Sem FK de webhook_outbox.orderId para orders e regra de onDelete das tabelas de evidência; proposta do FDD (o snapshot independente do pedido vem de [09:52] Larissa, mas a regra de FK não). |
-| FDD-DATA-09 | `docs/FDD.md` | Soft delete de webhooks, preservando histórico; proposta do FDD ([09:33] Bruno só fala em DELETE para remover). |
-| FDD-DEP-08 | `docs/FDD.md` | Uso do módulo node:crypto para HMAC e geração de secret; proposta do FDD (a reunião só fixa HMAC-SHA256, [09:20] Sofia). |
-| FDD-OBS-03 | `docs/FDD.md` | Log estruturado com eventId, webhookId e orderId, sem secret; proposta do FDD, a reunião só fixa o reuso do Pino ([09:29] Bruno). |
-| FDD-Q-06 | `docs/FDD.md` | Questão sobre rotação de secret em webhook inativo; levantada pela análise, não discutida na reunião. |
+- **PRD-OBJ-08** (docs/PRD.md): Meta de reduzir em 80% as chamadas de polling a `GET /orders`; o problema nasce em [09:00] Marcos, mas o número é proposta do PRD sem fala de origem.
+- **PRD-OBJ-09** (docs/PRD.md): Meta qualitativa "Atlas permanece cliente"; o risco de churn vem de [09:00] Marcos, a meta é proposta do PRD.
+- **PRD-NFR-09** (docs/PRD.md): Meta de disponibilidade em percentual; não foi discutida na reunião nem existe no código.
+- **PRD-TEST-09** (docs/PRD.md): Validação com a Atlas em ambiente de teste; proposta do PRD, a reunião só trata de confirmar o prazo ([09:47] Marcos).
+- **FDD-FLX-10** (docs/FDD.md): Recuperação de evento PROCESSING órfão por lease de 60 s; proposta do FDD.
+- **FDD-RES-10** (docs/FDD.md): Resiliência: repete a recuperação por lease de 60 s (FDD-FLX-10); proposta do FDD.
+- **FDD-RES-13** (docs/FDD.md): Não seguir redirects, truncar resposta armazenada em 4 KB e mitigar SSRF; proposta do FDD.
+- **FDD-DATA-08** (docs/FDD.md): Armazenamento da secret cifrada com AES-256-GCM; proposta do FDD (a reunião só pede que a secret exista, [09:21] Sofia, e que Sofia revise a geração, [09:46] Sofia).
+- **FDD-OBS-04** (docs/FDD.md): Métrica de contagem da outbox por status; proposta do FDD, a reunião não discutiu métricas.
+- **FDD-OBS-07** (docs/FDD.md): Métrica de tamanho da DLQ; proposta do FDD.
+- **FDD-OBS-08** (docs/FDD.md): Tracing por correlação de ids e `attemptId`; proposta do FDD, a reunião não discutiu tracing.
+- **FDD-OBS-10** (docs/FDD.md): Nomes de spans no estilo OpenTelemetry; proposta do FDD.
+- **FDD-Q-09** (docs/FDD.md): Questão sobre SSRF nas URLs cadastradas; levantada pela análise, não discutida na reunião.
+- **FDD-Q-16** (docs/FDD.md): Lista consolidada de hipóteses do FDD (batch de 10, lease de 60 s, 202 no replay e outras).
+- **FDD-ERR-07** (docs/FDD.md): Código WEBHOOK_DEAD_LETTER_NOT_FOUND para replay de id inexistente; o conceito de replay vem de [09:18] Diego, o código é proposta do FDD.
+- **FDD-ERR-08** (docs/FDD.md): Código WEBHOOK_DEAD_LETTER_ALREADY_REPLAYED (409) para replay repetido; proposta do FDD.
+- **FDD-ERR-09** (docs/FDD.md): Código WEBHOOK_INACTIVE (409) para replay ou rotação em webhook removido ou inativo; proposta do FDD.
+- **FDD-AC-15** (docs/FDD.md): Critério de aceite de replay repetido e de webhook inativo; deriva de FDD-ERR-08 e FDD-ERR-09, que são propostas do FDD.
+- **FDD-DATA-07** (docs/FDD.md): Sem FK de webhook_outbox.orderId para orders e regra de onDelete das tabelas de evidência; proposta do FDD (o snapshot independente do pedido vem de [09:52] Larissa, mas a regra de FK não).
+- **FDD-DATA-09** (docs/FDD.md): Soft delete de webhooks, preservando histórico; proposta do FDD ([09:33] Bruno só fala em DELETE para remover).
+- **FDD-DEP-08** (docs/FDD.md): Uso do módulo node:crypto para HMAC e geração de secret; proposta do FDD (a reunião só fixa HMAC-SHA256, [09:20] Sofia).
+- **FDD-OBS-03** (docs/FDD.md): Log estruturado com eventId, webhookId e orderId, sem secret; proposta do FDD, a reunião só fixa o reuso do Pino ([09:29] Bruno).
+- **FDD-Q-06** (docs/FDD.md): Questão sobre rotação de secret em webhook inativo; levantada pela análise, não discutida na reunião.
 
 ## Cobertura
 
